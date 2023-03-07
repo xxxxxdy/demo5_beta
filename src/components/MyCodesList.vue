@@ -1,5 +1,5 @@
 <template>
-    <div style="background:white; border-radius: 5px; margin-bottom: 5px;"
+    <div style="background:white; border-radius: 5px; margin-bottom: 5px; padding-top: 5px;"
         @mouseenter="rollingForDetail" @mouseleave="rollingCancel">
         &nbsp &nbsp <b>attribute</b> &nbsp
         <select style="padding-left:3px" :class="'seletor'+index" @change="changeDataValue">
@@ -11,10 +11,12 @@
         
         <div class="range" style="position: relative; padding-left: 18px; padding-bottom: 30px;" >
             <input type="range" class="persistent" min="0" :max="coarse_max"
-                :step="coarse_step" v-model="per_val" @input="changePersistent">
+                :step="coarse_step" v-model="per_val" @input="changePersistent" @mouseup="reorderVisualCode">
         </div>
-        <input type="button" class="kill" value="X" @click="$emit('delete', index)">
-        
+        <!-- <input type="button" class="kill" value="X" > -->
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="kill" @click="$emit('delete', index)">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
         <input type="button" class="reset" value="reset" @click="resetOperation"  :style="style_reset">
         <input type="button" class="filter" value="filter" @click="filterCodeCell">
         <input type="button" class="align" value="primary" @click="alignAsBase">
@@ -52,7 +54,7 @@
     display: inline-block;
     position: absolute;
     right: 0%;
-    height: 78%;
+    height: 80%;
     /* margin-left: 4px; */
 }
 
@@ -78,15 +80,20 @@
 .visual-code-canvas{
     /* position: relative;  */
     width: 100%;
-    height: 78%;
+    height: 80%;
     /* border-radius: 5px; */
     overflow-y: auto;
     background: white;
+}
+
+.visual-code-canvas::-webkit-scrollbar{
+    width: 0px;
 }
 .kill{
     position: absolute;
     right: 5px;
     top: 5px;
+    width: 25px;
     color: red;
 }
 input[type=range]{
@@ -371,6 +378,11 @@ export default{
             this.codes_message.sort(function(a, b){
                 return re_sort_order[tmp][a.idx] - re_sort_order[tmp][b.idx]
             })
+            if(this.is_beta){
+                this.codes_message_beta.sort(function(a, b){
+                    return re_sort_order[tmp][a.idx] - re_sort_order[tmp][b.idx]
+                })
+            }
             for(let i =this.first_on_screen, j=0; i<this.codes_message.length && j<this.once_render_num; i++, j++){
                 this.codes_message[i].show = true;
             }
@@ -391,7 +403,12 @@ export default{
                     this.codes_message[i] = JSON.parse(JSON.stringify(this.codes_message_beta[i]));
                 this.is_beta = false;
             }
+            this.time_x1 = CODE_PADDING
+            this.time_x2 = CODE_WIDTH + CODE_PADDING
             this.$refs.timeaxis.resetData();
+
+            for(let i=0; i<this.codes_message.length; i++)
+                this.codes_message[i]["str"] = CodeToString(this.codes_message[i].value);
 
             // updateOrder(this.index, this.data_type, this.sort_msg);
             if(this.sort_index !== this.index){
@@ -401,7 +418,7 @@ export default{
                     return re_sort_order[tmp][a.idx] - re_sort_order[tmp][b.idx]
                 })
             }
-            
+
             for(let i=0; i<this.codes_message.length; i++){
                 let len = this.codes_message[i].filter.length;
                 if(len>0){
@@ -415,7 +432,15 @@ export default{
         },
 
         cutTimeRange(msg){
-            let new_x = msg[0]+CODE_PADDING, new_x2 = msg[1]+CODE_PADDING;
+            let new_x=CODE_PADDING, new_x2=CODE_PADDING+CODE_WIDTH;
+            if(msg) {
+                new_x = msg[0]+CODE_PADDING; this.time_x1=new_x;
+                new_x2 = msg[1]+CODE_PADDING; this.time_x2 = new_x2;
+            }
+            else {
+                new_x = this.time_x1;
+                new_x2 = this.time_x2;
+            }
             if(!this.is_beta) {
                 this.codes_message_beta.splice(0, this.codes_message_beta.length);
                 for(let i=0, j=this.codes_message.length; i<j; i++)
@@ -443,6 +468,11 @@ export default{
                 }
             }
             
+            for(let i=0; i<this.codes_message.length; i++){
+                this.codes_message[i].filter.splice(0, this.codes_message[i].filter.length);
+                this.codes_message[i]["str"] = CodeToString(this.codes_message[i].value);
+            }
+                
             this.updateScrollForDraw(this.scroll_unit.scrollTop);
 
             // for(let i=0, j=this.codes_message.length; i<j; i++){
@@ -614,6 +644,7 @@ export default{
             else this.updateScrollForDraw(this.scroll_unit.scrollTop);
             
             filter_list[this.index].splice(0, filter_list[this.index].length);
+
             /// For update circle in linechart in real time 
             if(interactive_list.length>0){
                 bus.emit("clickForLine", -1);
@@ -663,6 +694,9 @@ export default{
             
             this.updateDrawMessage(this.per_val)
             this.updateMappingChannel()
+
+            this.is_beta = false
+            this.cutTimeRange()
         },
 
         /// change value attribute
@@ -704,8 +738,9 @@ export default{
         clickMoveFilter(e){
             e = e || window.event;
             let tar = e.target;
-            if(tar.tagName === "BODY" || tar.tagName==="HTML") return;
-            if(tar.className === "one-bar") return;
+            if(tar.tagName !== "CANVAS" && tar.className !== "my-scroll-bar-float" && tar.className !== "my-scroll-bar-item"
+                && tar.className !== "visual-code-canvas") return;
+
             let flag = false;
             let move_y = e.offsetY;
             while(tar.nodeName !== "MAIN"){
@@ -723,12 +758,12 @@ export default{
             
             if(!flag) return;
 
-            let pos = move_y-this.click_float_y - this.float_min;
+            let pos = move_y-this.click_float_y-this.float_min;
             let wid = (this.float_height*this.float_include);
             if(pos<0) pos = 0;
             if(pos>this.float_height-wid) pos = this.float_height - wid;
-            
-            this.style_float.top = pos+"px";
+
+            this.style_float.top = this.float_min+pos+"px";
             let scroll_float = pos/this.float_height*(this.codes_message.length*(this.onecode_height+2));
             this.scroll_unit.scrollTo(0, scroll_float);
             this.updateScrollForDraw(scroll_float, false);
@@ -737,6 +772,7 @@ export default{
         upFliter(e){
             let moveFunction = this.clickMoveFilter;
             let upFunction = this.upFliter;
+
             document.removeEventListener("mousemove", moveFunction);
             document.removeEventListener("mouseup", upFunction);
         },
@@ -803,11 +839,13 @@ export default{
             this.coarse_max = data_field["max_domain"][this.data_type] - data_field["min_domain"][this.data_type]
             this.coarse_step = this.coarse_max / 50
             this.fine_step = data_field["step"][this.data_type] / 50
+            this.time_x1 = CODE_PADDING
+            this.time_x2 = CODE_WIDTH + CODE_PADDING
             this.$refs.timeaxis.updateData();
 
             pers_list[this.index][0] = this.data_type;
             pers_list[this.index][1] = this.per_val;
-
+            
             this.float_include = this.float_num/this.codes_message.length;
             this.style_float.height = String(this.float_include>1?this.float_height: this.float_height*this.float_include)+"px";
 
@@ -888,7 +926,8 @@ export default{
         // this.fine_max = data_field["step"][this.data_type]
         // this.fine_step = this.fine_max / 50
         this.fine_step = data_field["step"][this.data_type] / 50
-        
+        this.time_x1 = CODE_PADDING
+        this.time_x2 = CODE_WIDTH + CODE_PADDING
         if(this.show_name)   this.onecode_height += 25;
         this.sort_index = this.index;
 

@@ -155,31 +155,22 @@ export default{
                         this.context.beginPath();
                         let x_to_draw = (getDataTime(idx)-x_min_domain)*x_range_to_draw;
                         let y_to_draw = (y_max_domain-getDataValue(idx, this.data_type))*y_range_to_draw;
+                        this.context.fillStyle = color_for_highlight[interactive_list[i]][0];
+                        this.context.strokeStyle = color_for_highlight[interactive_list[i]][0];
                         if(circle_type === 0){
                             this.context.arc(x_to_draw, y_to_draw, 4, 0, 2*Math.PI);
-                            this.context.strokeStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.closePath();
-                            this.context.fillStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.fill();
                         }
                         else if(circle_type === 1){
                             this.context.fillRect(x_to_draw-4, y_to_draw-4, 8, 8);
-                            this.context.strokeStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.closePath();
-                            this.context.fillStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.fill();
                         }
                         else if(circle_type === 2){
                             this.context.moveTo(x_to_draw-4, y_to_draw);
                             this.context.lineTo(x_to_draw, y_to_draw-4);
                             this.context.lineTo(x_to_draw+4, y_to_draw);
                             this.context.lineTo(x_to_draw, y_to_draw+4);
-                            this.context.strokeStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.closePath();
-                            this.context.fillStyle = color_for_highlight[interactive_list[i]][0];
-                            this.context.fill();
                         }
-                        
+                        this.context.closePath();
+                        this.context.fill();
                         this.context.stroke();
                     } 
                 }

@@ -27,7 +27,7 @@ export default{
     data(){
         return{
             file_name:['null','airline','BeijingAir','population',
-                'hardDrive','reading', 'stocks', 'weather','load data'
+                'hardDrive','reading', 'stocks', 'weather','covid-19','load data'
             ]
         };
     },

@@ -1,10 +1,15 @@
 <template>
     <div class="center">
-        <div style="font-weight:bold; padding-left: 18px">visual code</div>
-        <input type="button" class="clear" value="clear" @click="clearCanvas">
-        <input type="button" class="name" value="name" @click="showName">
+        <div style="font-weight:bold; padding-left: 18px">visual code
+            <input type="button" class="name" value="name" @click="showName">
+        </div>
+        <!-- <input type="button" class="clear" value="clear" @click="clearCanvas"> -->
+        
         <!--input type="button" class="export" value="export" @click="exportToCsv"-->
-        <input type="button" class="add" style="font-size:18px" value="+" @click="addVisualCodeList">
+        <!-- <input type="button" class="add" style="font-size:18px" value="+" @click="addVisualCodeList"> -->
+        <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="add" @click="addVisualCodeList">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+        </svg>
         <div class="pers-bar">
             <div class="one-bar" v-for="item in visual_list" :key="item" :id="'bar_'+item">
                 <MyCodesList  ref="code_window" @delete="deleteVisualCodeList" :index="item" :show_name="show_name"/>
@@ -40,13 +45,14 @@
 
 .clear, .name, .export{
     margin-left: 12px;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .add{
     position: absolute;
     right: 5px;
-    top: 5px
+    top: 0px;
+    width: 25px;
 }
 
 </style>
@@ -110,16 +116,17 @@ export default{
             }
             this.$emit('change', this.visual_list.length)
         },
-        clearCanvas(){
+ 
+    },
+    created(){
+        bus.on("clearCanvas", msg=>{
             for(let i=0; i<this.visual_list.length; i++)
                 this.$refs.code_window[i].clearHighlight()
             for(let key in color_for_highlight)
                 delete color_for_highlight[key]
             interactive_list.splice(0, interactive_list.length)
             bus.emit("clickForLine", -1)
-            bus.emit("analysisCode",[-1, -1, {}])
-        }
-        
+        })
     },
 
 }

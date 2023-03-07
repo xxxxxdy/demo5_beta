@@ -6,7 +6,6 @@
 export var color_for_highlight = {};
 
 const HIGHLIGHT_COLOR_SET = [
-    "#1f77b4",
     "#ff7e0e",
     "#2c9f2c",
     "#d52728",
@@ -25,7 +24,8 @@ const HIGHLIGHT_COLOR_SET = [
     "#f7b6d2",
     "#c6c6c6",
     "#dbdb8d",
-    "#9edae4"
+    "#9edae4",
+    "#1f77b4",
 ];
 
 export const CLUSTER_COLOR_SET = [
